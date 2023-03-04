@@ -1140,8 +1140,10 @@ class Scheduler:
         V.graph.device_types.add(device.type)
         if device.type == "cpu":
             from .codegen.cpp import CppScheduling
-
-            return CppScheduling(self)
+            from .codegen.mlir import MlirScheduling
+            #return CppScheduling(self)
+            print("Creating Mlir scheduling")
+            return MlirScheduling(self)
         else:
             if not has_triton():
                 device_props = torch.cuda.get_device_properties(device)

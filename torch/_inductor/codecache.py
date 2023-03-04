@@ -525,13 +525,21 @@ def cpp_compile_command(
         r"[ \n]+",
         " ",
         f"""
-            {cpp_compiler()} {input} {get_shared(shared)} {get_warning_all_flag(warning_all)} {cpp_flags()}
-            {ipaths} {lpaths} {libs} {macros}
-            {optimization_flags()}
-            {use_custom_generated_macros()}
-            -o{output}
+            lower-mlir {input} -o {output}
         """,
     ).strip()
+
+    # return re.sub(
+    #    r"[ \n]+",
+    #    " ",
+    #    f"""
+    #        {cpp_compiler()} {input} {get_shared(shared)} {get_warning_all_flag(warning_all)} {cpp_flags()}
+    #        {ipaths} {lpaths} {libs} {macros}
+    #        {optimization_flags()}
+    #        {use_custom_generated_macros()}
+    #        -o{output}
+    #    """,
+    # ).strip()
 
 
 class CppCodeCache:
@@ -562,7 +570,7 @@ class CppCodeCache:
         picked_vec_isa = pick_vec_isa()
         key, input_path = write(
             source_code,
-            "cpp",
+            "mlir",
             code_hash(repr(cpp_compile_command("i", "o", vec_isa=picked_vec_isa))),
         )
         if key not in cls.cache:
@@ -571,12 +579,13 @@ class CppCodeCache:
             lock_dir = get_lock_dir()
             lock = FileLock(os.path.join(lock_dir, key + ".lock"), timeout=LOCK_TIMEOUT)
             with lock:
-                output_path = input_path[:-3] + "so"
+                output_path = input_path[:-4] + "so"
                 if not os.path.exists(output_path):
                     cmd = cpp_compile_command(
                         input=input_path, output=output_path, vec_isa=picked_vec_isa
                     ).split(" ")
                     try:
+                        print("Executing command ", cmd)
                         subprocess.check_output(cmd, stderr=subprocess.STDOUT)
                     except subprocess.CalledProcessError as e:
                         raise exc.CppCompileError(cmd, e.output) from e
