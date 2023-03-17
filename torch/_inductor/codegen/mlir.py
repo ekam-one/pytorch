@@ -269,7 +269,7 @@ class MlirVecOverrides(OpOverrides):
 
     @staticmethod
     def mul(a, b):
-        return f"{a} * {b}"
+        return f"arith.mulf %{a}, %{b} : f32"
 
     @staticmethod
     def div(a, b):
@@ -592,6 +592,10 @@ class MlirOverrides(OpOverrides):
     @staticmethod
     def add(a, b):
         return f"arith.addf %{a}, %{b} : f32"
+    
+    @staticmethod
+    def mul(a, b):
+        return f"arith.mulf %{a}, %{b} : f32"
 
     @staticmethod
     def abs(x):
@@ -603,7 +607,7 @@ class MlirOverrides(OpOverrides):
 
     @staticmethod
     def cos(x):
-        return f"std::cos({x})"
+        return f"math.cos %{x} : f32"
 
     @staticmethod
     def neg(x):

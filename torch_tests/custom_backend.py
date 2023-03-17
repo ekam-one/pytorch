@@ -316,16 +316,30 @@ class MlirFxBackend:
         return self.lower_and_load()
 
 
+# def fn(x, y):
+#     a = torch.sin(x)
+#     b = torch.sin(y)
+#     return a + b
+
+
+# compiled = torch.compile(fn, backend=MlirFxBackend)
+
+# print("Done with compilation, now jit")
+# a = torch.randn(100)
+# b = torch.randn(100)
+# print("Output from custom : ", compiled(a, b))
+# print("Output from local : ", fn(a, b))
+
+
+import torch
+
+
 def fn(x, y):
     a = torch.sin(x)
     b = torch.sin(y)
     return a + b
 
-
-compiled = torch.compile(fn, backend=MlirFxBackend)
-
-print("Done with compilation, now jit")
-a = torch.randn(100)
-b = torch.randn(100)
-print("Output from custom : ", compiled(a, b))
-print("Output from local : ", fn(a, b))
+new_fn = torch.compile(fn, backend=MlirFxBackend)
+input_tensor = torch.randn(100, requires_grad=True)
+out = new_fn(input_tensor, input_tensor)
+print(out.sum().backward())
