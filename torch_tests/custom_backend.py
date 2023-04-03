@@ -7,7 +7,9 @@ import subprocess
 from ctypes import cdll
 from ctypes import c_void_p
 from torch import empty_strided
-
+from torch._dynamo.backends.common import aot_autograd
+from functorch.compile import make_boxed_func
+from torch._inductor.decomposition import select_decomp_table
 
 class MlirDType(enum.Enum):
     f32 = 1
@@ -189,8 +191,12 @@ class Codegen:
             fd.writelines(self.code)
 
 
+decompositions = select_decomp_table()
+
 class MlirFxBackend:
     def __init__(self, gm: torch.fx.GraphModule, example_inputs: List[torch.Tensor]):
+        print("MlirFxBackend init called")
+        print(gm)
         self.gm = gm
         self.node_types = {}
         self.inputs = example_inputs
@@ -334,12 +340,32 @@ class MlirFxBackend:
 import torch
 
 
-def fn(x, y):
-    a = torch.sin(x)
-    b = torch.sin(y)
-    return a + b
+# def fn(x, y):
+#     a = torch.sin(x)
+#     b = torch.sin(y)
+#     return a + b
 
-new_fn = torch.compile(fn, backend=MlirFxBackend)
+# new_fn = torch.compile(fn, backend=MlirFxBackend)
+# input_tensor = torch.randn(100, requires_grad=True)
+# out = new_fn(input_tensor, input_tensor)
+# print(out.sum().backward())
+
+def my_compiler(gm, example_inputs):
+  backend = MlirFxBackend(gm, example_inputs)
+  return make_boxed_func(backend.kernel)
+
+my_backend = aot_autograd(
+            fw_compiler=my_compiler,
+            bw_compiler=my_compiler,
+            decompositions=decompositions,)
+
+
+
+def fn(x):
+    return torch.softmax(x, -1)
+
+model_opt = torch.compile(fn, backend=my_backend)
+
 input_tensor = torch.randn(100, requires_grad=True)
-out = new_fn(input_tensor, input_tensor)
+out = model_opt(input_tensor)
 print(out.sum().backward())
