@@ -27,6 +27,7 @@ After successful cmake, 
 Add build/bin to PATH
 
 ```export PYTHONPATH=<build>/tools/mlir_hlo/python_packages/mlir_hlo```
+```export MHLO_LLVM_RELEASE_BUILD=<llvm-build>```
 
  
 ### Step 4:
